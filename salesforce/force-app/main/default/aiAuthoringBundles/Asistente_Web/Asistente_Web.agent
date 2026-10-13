@@ -25,9 +25,15 @@ variables:
         description: "This variable may also be referred to as MessagingSession EndUserLanguage"
 
 language:
-    default_locale: "es"
+    default_locale: "es_MX"
     additional_locales: ""
     all_additional_locales: False
+
+connection messaging:
+    escalation_message: "Un momento, te comunico con una persona de nuestro equipo de atención."
+    outbound_route_type: "OmniChannelFlow"
+    outbound_route_name: "flow://Asistente_Web_Escalamiento"
+    adaptive_response_allowed: True
 
 start_agent agent_router:
     label: "Enrutador"
@@ -53,9 +59,11 @@ subagent preguntas_frecuentes:
             | Responde de forma breve y útil preguntas generales de atención al cliente sobre horarios de atención, envíos, devoluciones, métodos de pago, gestión de cuenta y soporte.
               Si no conoces un dato concreto de la empresa, dilo con honestidad y sugiere contactar a soporte por los canales oficiales.
               Nunca inventes números de pedido, precios, fechas de entrega ni datos personales.
-              Si el cliente pide hablar con una persona, indícale que puede contactar a soporte por teléfono o correo en los canales oficiales.
+              Si el cliente pide hablar con una persona o no puedes resolver su consulta, ofrécele transferirlo y usa la herramienta de escalamiento.
               Termina preguntando si puedes ayudar en algo más.
         actions:
+            escalar_a_persona: @utils.escalate
+                description: "Transfiere la conversación a una persona del equipo de atención"
             volver_inicio: @utils.transition to @subagent.agent_router
                 description: "El cliente quiere hablar de otro tema"
 

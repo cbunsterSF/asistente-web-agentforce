@@ -65,6 +65,26 @@ npm start                 # todo en http://localhost:3001
 
 > Nunca subas `.env` a un repositorio (ya está en `.gitignore`).
 
+## Publicar en internet con GitHub Codespaces
+
+El repositorio incluye `.devcontainer/` para ejecutar la app en un Codespace con URL pública HTTPS.
+
+1. Guarda las variables como *Codespaces secrets* del repositorio (Settings → Secrets and variables → Codespaces) o con la CLI:
+   ```bash
+   gh secret set SF_MY_DOMAIN     --app codespaces -R cbunsterSF/asistente-web-agentforce
+   gh secret set SF_CLIENT_ID     --app codespaces -R cbunsterSF/asistente-web-agentforce
+   gh secret set SF_CLIENT_SECRET --app codespaces -R cbunsterSF/asistente-web-agentforce
+   gh secret set SF_AGENT_ID      --app codespaces -R cbunsterSF/asistente-web-agentforce
+   ```
+2. Crea el Codespace (instala, compila y arranca `npm start` en el puerto 3001 automáticamente):
+   ```bash
+   gh codespace create -R cbunsterSF/asistente-web-agentforce -b main --idle-timeout 240m
+   ```
+3. Haz público el puerto: `gh codespace ports visibility 3001:public -c <nombre-del-codespace>`
+4. Abre `https://<nombre-del-codespace>-3001.app.github.dev`.
+
+> El Codespace se detiene tras el tiempo de inactividad; vuelve a iniciarlo con `gh codespace code`/`ssh` o desde github.com/codespaces y la app arranca sola.
+
 ## Publicar en internet (Heroku, Render, Railway…)
 
 1. Sube el proyecto a un repositorio (sin `.env`).

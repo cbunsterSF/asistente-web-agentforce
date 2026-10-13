@@ -1,0 +1,10 @@
+{
+  "name": "Asistente Web · Agentforce",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "forwardPorts": [3001],
+  "portsAttributes": {
+    "3001": { "label": "Asistente Web", "onAutoForward": "silent" }
+  },
+  "postCreateCommand": "npm install --include=dev && npm run build",
+  "postStartCommand": "nohup npm start > /tmp/asistente.log 2>&1 &"
+}

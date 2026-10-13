@@ -16,5 +16,5 @@
     }
   },
   "postCreateCommand": "npm install --include=dev && npm run build",
-  "postStartCommand": "nohup npm start > /tmp/asistente.log 2>&1 &"
+  "postStartCommand": "bash .devcontainer/start.sh"
 }

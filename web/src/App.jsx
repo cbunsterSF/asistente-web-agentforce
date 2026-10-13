@@ -1,312 +1,234 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { createSession, endSession, sendMessage } from './api.js';
-import { sttSupported, ttsSupported, useSpeechRecognition, useSpeechSynthesis } from './speech.js';
+import React, { useEffect, useState } from 'react';
+import { openChat } from './chat.js';
 
-const Icon = {
-  mic: (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><line x1="12" y1="17" x2="12" y2="22" /></svg>
-  ),
-  send: (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" /></svg>
-  ),
-  speaker: (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M19 5a10 10 0 0 1 0 14" /></svg>
-  ),
-  mute: (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z" /><line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" /></svg>
-  ),
-  refresh: (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
-  ),
-  stop: (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-  ),
-  bot: (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="12" rx="3" /><path d="M12 8V4" /><circle cx="12" cy="3" r="1" /><circle cx="8.5" cy="14" r="1.2" fill="currentColor" /><circle cx="15.5" cy="14" r="1.2" fill="currentColor" /></svg>
-  ),
-};
+const NAV = ['Menú', 'Rewards', 'Café', 'GIFT', 'Ayuda'];
 
-let idSeq = 0;
-const newId = () => `m${++idSeq}`;
+// Temas de ayuda: cada tarjeta abre el asistente con una pregunta sugerida.
+const TOPICS = [
+  { icon: '🧾', title: 'Mi pedido', text: 'Pedido incompleto, demora o error en tu bebida.', hint: 'Mi pedido llegó incompleto' },
+  { icon: '⭐', title: 'Starbucks Rewards', text: 'Estrellas, beneficios y tu café gratis de cumpleaños.', hint: '¿Cómo canjeo mis estrellas?' },
+  { icon: '💳', title: 'Tarjeta y GIFT', text: 'Recargas, saldo y tarjetas de regalo.', hint: '¿Cómo reviso el saldo de mi tarjeta?' },
+  { icon: '🛵', title: 'Delivery', text: 'Seguimiento y problemas con pedidos a domicilio.', hint: 'Mi delivery no ha llegado' },
+  { icon: '📍', title: 'Tiendas y horarios', text: 'Encuentra la tienda más cercana y su horario.', hint: '¿Qué horario tiene la tienda de Providencia?' },
+  { icon: '💬', title: 'Reclamos y sugerencias', text: 'Cuéntanos tu experiencia y abrimos un caso.', hint: 'Quiero dejar un reclamo' },
+];
+
+const FAQS = [
+  { q: '¿Cómo me uno a Starbucks Rewards?', a: 'Descarga la app o regístrate en el sitio con tu correo. Desde tu primera compra registrada empiezas a sumar estrellas.' },
+  { q: '¿Cuántas estrellas necesito para un café gratis?', a: 'Depende de la bebida que elijas. Puedes revisar los niveles de canje en la sección Rewards de tu cuenta.' },
+  { q: '¿Puedo recargar mi tarjeta Starbucks en línea?', a: 'Sí. Desde la app o tu cuenta puedes recargar con tarjeta de crédito o débito y el saldo queda disponible al instante.' },
+  { q: '¿Qué hago si mi pedido de delivery llegó incompleto?', a: 'Escríbele a nuestro asistente con el detalle de tu pedido. Si corresponde, registra un caso para que nuestro equipo te contacte.' },
+  { q: '¿Tienen opciones de leche vegetal?', a: 'Sí, contamos con bebida de avena, almendra y soya en la mayoría de nuestras tiendas.' },
+  { q: '¿Cómo reservo un espacio en el Smart Lounge?', a: 'Puedes reservar tu espacio de trabajo en la tienda Bandera desde el enlace de reservas. Recuerda revisar las condiciones de uso.' },
+];
+
+const PRODUCTS = [
+  { name: 'Pumpkin Spice Latte', note: 'De temporada', cup: '#c8743a', foam: '#f3d9b8' },
+  { name: 'Caramel Macchiato', note: 'Clásico', cup: '#a8693f', foam: '#f6e7cf' },
+  { name: 'Mocha Frappuccino®', note: 'Frío', cup: '#6b4128', foam: '#fbf4ea' },
+  { name: 'Matcha Latte', note: 'Sin café', cup: '#7fa65a', foam: '#eef3e3' },
+];
+
+function Logo() {
+  return (
+    <a className="logo" href="#" aria-label="Inicio">
+      <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true">
+        <circle cx="24" cy="24" r="23" fill="#006241" />
+        <circle cx="24" cy="24" r="18" fill="none" stroke="#fff" strokeWidth="1.6" />
+        <path d="M15 19h16l-1.6 14a3 3 0 0 1-3 2.6h-6.8a3 3 0 0 1-3-2.6L15 19Z" fill="#fff" />
+        <path d="M31 22h2a3 3 0 0 1 0 6h-2.4" fill="none" stroke="#fff" strokeWidth="1.8" />
+        <path d="M20 12c1.5 1.5-1.5 3 0 4.5M24 11c1.5 1.5-1.5 3 0 4.5M28 12c1.5 1.5-1.5 3 0 4.5" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+    </a>
+  );
+}
+
+function Cup({ cup, foam, size = 120 }) {
+  return (
+    <svg viewBox="0 0 120 150" width={size} height={size * 1.25} aria-hidden="true">
+      <ellipse cx="60" cy="142" rx="34" ry="5" fill="rgba(0,0,0,.12)" />
+      <path d="M26 34h68l-8 100a8 8 0 0 1-8 7H42a8 8 0 0 1-8-7L26 34Z" fill={cup} />
+      <path d="M30 70h60l-1.8 26H31.8L30 70Z" fill="#fff" opacity=".92" />
+      <circle cx="60" cy="83" r="9" fill="#006241" />
+      <rect x="20" y="22" width="80" height="14" rx="5" fill={foam} />
+      <rect x="30" y="14" width="60" height="10" rx="4" fill="#fff" />
+    </svg>
+  );
+}
 
 export default function App() {
-  const [sessionId, setSessionId] = useState(null);
-  const [status, setStatus] = useState('connecting'); // connecting | ready | error
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [voiceOn, setVoiceOn] = useState(ttsSupported);
-  const [handsFree, setHandsFree] = useState(false);
-
-  const seqRef = useRef(1);
-  const sessionRef = useRef(null);
-  const listRef = useRef(null);
-  const inputRef = useRef(null);
-  const handsFreeRef = useRef(handsFree);
-  handsFreeRef.current = handsFree;
-  const voiceOnRef = useRef(voiceOn);
-  voiceOnRef.current = voiceOn;
-
-  const tts = useSpeechSynthesis({ lang: 'es-ES' });
-  const submitRef = useRef(() => {});
-  const stt = useSpeechRecognition({ lang: 'es-ES', onFinal: (text) => submitRef.current(text) });
-
-  // ---------- Sesión ----------
-  const startSession = useCallback(async () => {
-    setStatus('connecting');
-    setError('');
-    try {
-      const { sessionId: sid, welcome } = await createSession();
-      sessionRef.current = sid;
-      seqRef.current = 1;
-      setSessionId(sid);
-      setStatus('ready');
-      return { sid, welcome };
-    } catch (e) {
-      setStatus('error');
-      setError(e.message);
-      return null;
-    }
-  }, []);
+  const [open, setOpen] = useState(0);
+  const [toast, setToast] = useState('');
 
   useEffect(() => {
-    let cancelled = false;
-    startSession().then((r) => {
-      if (!cancelled && r?.welcome) setMessages([{ id: newId(), role: 'agent', text: r.welcome }]);
-    });
-    const onUnload = () => endSession(sessionRef.current);
-    window.addEventListener('pagehide', onUnload);
-    return () => {
-      cancelled = true;
-      window.removeEventListener('pagehide', onUnload);
-    };
-  }, [startSession]);
+    if (!toast) return undefined;
+    const t = setTimeout(() => setToast(''), 6000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
-  const resetConversation = async () => {
-    stt.abort();
-    tts.cancel();
-    endSession(sessionRef.current);
-    setMessages([]);
-    const r = await startSession();
-    if (r?.welcome) {
-      setMessages([{ id: newId(), role: 'agent', text: r.welcome }]);
-      if (voiceOnRef.current) tts.speak(r.welcome);
-    }
+  const ask = (hint) => {
+    openChat()
+      .then(() => hint && setToast(`Prueba escribir o decir: “${hint}”`))
+      .catch(() => setToast('El asistente se está cargando. Inténtalo en unos segundos.'));
   };
-
-  // ---------- Enviar ----------
-  const submit = useCallback(
-    async (rawText) => {
-      const text = (rawText ?? '').trim();
-      if (!text || busy || !sessionRef.current) return;
-      tts.cancel();
-      setError('');
-      setInput('');
-      setBusy(true);
-      const agentId = newId();
-      setMessages((m) => [...m, { id: newId(), role: 'user', text }, { id: agentId, role: 'agent', text: '', pending: true }]);
-
-      const update = (patch) => setMessages((m) => m.map((x) => (x.id === agentId ? { ...x, ...patch(x) } : x)));
-      let finalText = '';
-      let streamed = '';
-
-      const run = async (sid) => {
-        let expired = false;
-        await sendMessage(sid, text, seqRef.current++, (evt) => {
-          if (evt.type === 'chunk') {
-            streamed += evt.text;
-            update((x) => ({ text: x.text + evt.text }));
-          }
-          else if (evt.type === 'message') {
-            finalText = evt.text;
-            update(() => ({ text: evt.text, pending: false }));
-          } else if (evt.type === 'progress') update((x) => ({ progress: evt.text }));
-          else if (evt.type === 'error') {
-            if (evt.error === 'session_expired' || evt.status === 404) expired = true;
-            else throw new Error(evt.error || 'Error del agente');
-          }
-        });
-        return expired;
-      };
-
-      try {
-        let expired = await run(sessionRef.current);
-        if (expired) {
-          streamed = '';
-          update(() => ({ text: '' }));
-          // La sesión caducó por inactividad: creamos una nueva y reenviamos.
-          const r = await startSession();
-          if (!r) throw new Error('No se pudo reconectar con el agente');
-          expired = await run(r.sid);
-          if (expired) throw new Error('La sesión no está disponible');
-        }
-        finalText = (finalText || streamed).trim();
-        update(() => ({ text: finalText || 'No recibí respuesta del agente.', pending: false, progress: undefined }));
-        const afterSpeak = () => {
-          if (handsFreeRef.current && sttSupported) setTimeout(() => stt.start(), 250);
-        };
-        if (voiceOnRef.current && finalText) tts.speak(finalText, afterSpeak);
-        else afterSpeak();
-      } catch (e) {
-        setError(e.message);
-        update(() => ({ text: 'Lo siento, hubo un problema al obtener la respuesta.', pending: false, failed: true }));
-      } finally {
-        setBusy(false);
-        inputRef.current?.focus();
-      }
-    },
-    [busy, startSession, tts, stt]
-  );
-  submitRef.current = submit;
-
-  // ---------- Micrófono ----------
-  const toggleMic = () => {
-    if (stt.listening) return stt.stop();
-    tts.cancel(); // barge-in: si el agente habla, se calla
-    stt.start();
-  };
-
-  const toggleHandsFree = () => {
-    const next = !handsFree;
-    setHandsFree(next);
-    if (next) {
-      setVoiceOn(true);
-      if (!stt.listening && !busy) {
-        tts.cancel();
-        stt.start();
-      }
-    } else stt.abort();
-  };
-
-  // Autoscroll
-  useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, stt.interim]);
-
-  const statusLabel =
-    status === 'connecting' ? 'Conectando…' : status === 'error' ? 'Sin conexión' : stt.listening ? 'Escuchando…' : tts.speaking ? 'Hablando…' : busy ? 'Pensando…' : 'En línea';
 
   return (
-    <div className="page">
-      <div className="chat">
-        <header className="chat-header">
-          <div className="avatar">{Icon.bot}</div>
-          <div className="title">
-            <h1>Asistente Web</h1>
-            <span className={`status status-${status}`}>
-              <i /> {statusLabel}
-            </span>
+    <>
+      <header className="header">
+        <div className="header-inner">
+          <Logo />
+          <nav className="nav-main">
+            {NAV.map((n) => (
+              <a key={n} href={n === 'Ayuda' ? '#ayuda' : '#'}>{n}</a>
+            ))}
+          </nav>
+          <div className="nav-right">
+            <a href="#" className="store">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" fill="currentColor" /></svg>
+              Localizar tienda
+            </a>
+            <a href="#" className="btn btn-outline-dark">Iniciar sesión</a>
+            <a href="#" className="btn btn-dark">Únete</a>
           </div>
-          <div className="header-actions">
-            {ttsSupported && (
-              <button
-                className={`icon-btn ${voiceOn ? 'active' : ''}`}
-                onClick={() => {
-                  if (voiceOn) tts.cancel();
-                  setVoiceOn(!voiceOn);
-                }}
-                title={voiceOn ? 'Desactivar lectura en voz alta' : 'Activar lectura en voz alta'}
-                aria-pressed={voiceOn}
-              >
-                {voiceOn ? Icon.speaker : Icon.mute}
-              </button>
-            )}
-            <button className="icon-btn" onClick={resetConversation} title="Nueva conversación" disabled={status === 'connecting'}>
-              {Icon.refresh}
-            </button>
-          </div>
-        </header>
+        </div>
+      </header>
 
-        <main className="messages" ref={listRef} aria-live="polite">
-          {messages.map((m) => (
-            <div key={m.id} className={`row ${m.role}`}>
-              <div className={`bubble ${m.failed ? 'failed' : ''}`}>
-                {m.pending && !m.text ? (
-                  <span className="typing">
-                    <span />
-                    <span />
-                    <span />
-                    {m.progress && <em>{m.progress}</em>}
-                  </span>
-                ) : (
-                  m.text
-                )}
-                {m.role === 'agent' && !m.pending && m.text && ttsSupported && (
-                  <button className="replay" onClick={() => tts.speak(m.text)} title="Escuchar">
-                    {Icon.speaker}
-                  </button>
-                )}
+      <main>
+        <section className="hero">
+          <div className="hero-text">
+            <span className="eyebrow">Es época</span>
+            <h1>Vuelve el sabor del otoño</h1>
+            <p>Pumpkin Spice Latte con espresso, especias de calabaza y crema batida. Disponible por tiempo limitado.</p>
+            <div className="hero-actions">
+              <a href="#menu" className="btn btn-light">Ver menú</a>
+              <button className="btn btn-outline-light" onClick={() => ask('¿Qué bebidas de temporada tienen?')}>Pregúntale al asistente</button>
+            </div>
+          </div>
+          <div className="hero-art">
+            <Cup cup="#c8743a" foam="#f3d9b8" size={220} />
+          </div>
+        </section>
+
+        <section className="band band-cream">
+          <div className="band-art">
+            <div className="stars">★ ★ ★</div>
+          </div>
+          <div className="band-text">
+            <h2>¡Hola café gratis!</h2>
+            <p>Regístrate en Starbucks Rewards, suma estrellas y obtén beneficios.</p>
+            <a href="#" className="btn btn-green">Únete aquí</a>
+          </div>
+        </section>
+
+        <section id="ayuda" className="help">
+          <div className="section-head">
+            <span className="eyebrow eyebrow-green">Atención al cliente</span>
+            <h2>¿En qué te podemos ayudar?</h2>
+            <p>Nuestro asistente virtual responde tus dudas al instante, por chat o por voz, y si lo necesitas registra tu caso o te conecta con una persona del equipo.</p>
+          </div>
+          <div className="topics">
+            {TOPICS.map((t) => (
+              <button key={t.title} className="topic" onClick={() => ask(t.hint)}>
+                <span className="topic-icon" aria-hidden="true">{t.icon}</span>
+                <strong>{t.title}</strong>
+                <span>{t.text}</span>
+                <em>Consultar al asistente →</em>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="assistant">
+          <div className="assistant-text">
+            <h2>Habla con nosotros, como prefieras</h2>
+            <ul>
+              <li><b>Escribe</b> tu consulta en el chat.</li>
+              <li><b>Activa la voz</b> y conversa con el asistente en español.</li>
+              <li><b>Pide hablar con una persona</b> y te transferimos con el equipo de atención.</li>
+            </ul>
+            <button className="btn btn-light" onClick={() => ask('')}>Iniciar conversación</button>
+          </div>
+          <div className="assistant-art" aria-hidden="true">
+            <div className="bubble bubble-in">Hola, mi pedido llegó sin el Frappuccino 😕</div>
+            <div className="bubble bubble-out">Lo siento mucho. ¿Me indicas tu número de pedido para revisarlo?</div>
+            <div className="bubble bubble-in">🎙️ Sí, es el 4 5 2 1</div>
+          </div>
+        </section>
+
+        <section id="menu" className="products">
+          <div className="section-head">
+            <h2>Favoritos de la temporada</h2>
+          </div>
+          <div className="product-grid">
+            {PRODUCTS.map((p) => (
+              <div key={p.name} className="product">
+                <div className="product-art"><Cup cup={p.cup} foam={p.foam} /></div>
+                <span className="product-note">{p.note}</span>
+                <strong>{p.name}</strong>
               </div>
-            </div>
-          ))}
-          {stt.listening && (
-            <div className="row user">
-              <div className="bubble interim">{stt.interim || 'Te escucho…'}</div>
-            </div>
-          )}
-        </main>
-
-        {(error || stt.error) && (
-          <div className="alert" role="alert">
-            {error || stt.error}
-            {status === 'error' && (
-              <button onClick={resetConversation} className="link-btn">
-                Reintentar
-              </button>
-            )}
+            ))}
           </div>
-        )}
+        </section>
 
-        <footer className="composer">
-          {tts.speaking && (
-            <button className="stop-speaking" onClick={tts.cancel}>
-              {Icon.stop} Detener voz
-            </button>
-          )}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              submit(input);
-            }}
-          >
-            {sttSupported && (
-              <button
-                type="button"
-                className={`mic ${stt.listening ? 'listening' : ''}`}
-                onClick={toggleMic}
-                disabled={status !== 'ready' || busy}
-                title={stt.listening ? 'Detener y enviar' : 'Hablar'}
-                aria-pressed={stt.listening}
-              >
-                {Icon.mic}
-              </button>
-            )}
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={status === 'ready' ? 'Escribe tu mensaje…' : 'Conectando con el agente…'}
-              disabled={status !== 'ready'}
-              aria-label="Mensaje"
-            />
-            <button type="submit" className="send" disabled={!input.trim() || busy || status !== 'ready'} title="Enviar">
-              {Icon.send}
-            </button>
-          </form>
-          <div className="footnote">
-            {sttSupported ? (
-              <label className="switch">
-                <input type="checkbox" checked={handsFree} onChange={toggleHandsFree} disabled={status !== 'ready'} />
-                <span /> Conversación por voz continua
-              </label>
-            ) : (
-              <span>Tu navegador no admite dictado por voz. Usa Chrome, Edge o Safari para hablar con el asistente.</span>
-            )}
-            {tts.voiceName && voiceOn && <span className="voice-name">Voz: {tts.voiceName}</span>}
+        <section className="faq">
+          <div className="section-head">
+            <h2>Preguntas frecuentes</h2>
           </div>
-        </footer>
-      </div>
-    </div>
+          <div className="faq-list">
+            {FAQS.map((f, i) => (
+              <div key={f.q} className={`faq-item ${open === i ? 'open' : ''}`}>
+                <button onClick={() => setOpen(open === i ? -1 : i)} aria-expanded={open === i}>
+                  <span>{f.q}</span>
+                  <span className="chev" aria-hidden="true">⌄</span>
+                </button>
+                {open === i && <p>{f.a}</p>}
+              </div>
+            ))}
+          </div>
+          <p className="faq-more">
+            ¿No encontraste lo que buscabas? <button className="link" onClick={() => ask('')}>Habla con nuestro asistente</button>
+          </p>
+        </section>
+
+        <section className="band band-green">
+          <div className="band-text">
+            <h2>¡La Experiencia Starbucks llega a donde tú quieras!</h2>
+            <p>Revisa nuestras opciones de delivery.</p>
+            <a href="#" className="btn btn-light">Pide aquí</a>
+          </div>
+          <div className="band-text">
+            <h2>Únete a algo más grande</h2>
+            <p>Revisa las oportunidades que tenemos para ti.</p>
+            <a href="#" className="btn btn-outline-light">Postula aquí</a>
+          </div>
+        </section>
+      </main>
+
+      <footer className="footer">
+        <div className="footer-cols">
+          <div>
+            <h4>Sobre nosotros</h4>
+            <a href="#">Nuestra historia</a><a href="#">Nuestra misión</a><a href="#">Nuestro café</a><a href="#">Trabaja con nosotros</a>
+          </div>
+          <div>
+            <h4>Impacto social</h4>
+            <a href="#">Abastecimiento ético</a><a href="#">Sustentabilidad</a><a href="#">Inclusión, diversidad y equidad</a>
+          </div>
+          <div>
+            <h4>Atención al cliente</h4>
+            <a href="#ayuda">Centro de ayuda</a><button className="link" onClick={() => ask('')}>Chatea con nosotros</button>
+          </div>
+          <div>
+            <h4>Experiencia Starbucks</h4>
+            <a href="#">Formas de comprar</a><a href="#">Delivery</a>
+          </div>
+        </div>
+        <div className="footer-legal">
+          <span>Sitio de demostración de Salesforce Agentforce. No es un sitio oficial ni está afiliado a Starbucks Coffee Company.</span>
+        </div>
+      </footer>
+
+      {toast && <div className="toast" role="status">{toast}</div>}
+    </>
   );
 }

@@ -76,14 +76,18 @@ El repositorio incluye `.devcontainer/` para ejecutar la app en un Codespace con
    gh secret set SF_CLIENT_SECRET --app codespaces -R cbunsterSF/asistente-web-agentforce
    gh secret set SF_AGENT_ID      --app codespaces -R cbunsterSF/asistente-web-agentforce
    ```
-2. Crea el Codespace (instala, compila y arranca `npm start` en el puerto 3001 automáticamente):
+2. Crea el Codespace (instala dependencias y compila automáticamente):
    ```bash
-   gh codespace create -R cbunsterSF/asistente-web-agentforce -b main --idle-timeout 240m
+   gh codespace create -R cbunsterSF/asistente-web-agentforce -b main -m basicLinux32gb --idle-timeout 240m
    ```
-3. Haz público el puerto: `gh codespace ports visibility 3001:public -c <nombre-del-codespace>`
-4. Abre `https://<nombre-del-codespace>-3001.app.github.dev`.
+3. Arranca la app (Codespaces termina los procesos que deja el `postStartCommand`, así que se lanza por SSH; usa una clave sin passphrase, p. ej. `ssh-keygen -t ed25519 -N "" -f ~/.ssh/codespaces.auto`):
+   ```bash
+   gh codespace ssh -c <nombre> -- -i ~/.ssh/codespaces.auto 'bash /workspaces/asistente-web-agentforce/.devcontainer/start.sh'
+   ```
+4. Haz público el puerto: `gh codespace ports visibility 3001:public -c <nombre>`
+5. Abre `https://<nombre>-3001.app.github.dev`.
 
-> El Codespace se detiene tras el tiempo de inactividad; vuelve a iniciarlo con `gh codespace code`/`ssh` o desde github.com/codespaces y la app arranca sola.
+> El Codespace se detiene tras 4 h de inactividad. Para volver a usarlo, repite los pasos 3 y 4 (el `gh codespace ssh` también lo enciende).
 
 ## Publicar en internet (Heroku, Render, Railway…)
 

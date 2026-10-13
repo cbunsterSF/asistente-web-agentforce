@@ -9,5 +9,27 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Enhanced Chat v2 (despliegue VoiceChat) con Agentforce Voice -->
+    <script type="text/javascript">
+      function initEmbeddedMessaging() {
+        try {
+          embeddedservice_bootstrap.settings.language = 'es_MX';
+          embeddedservice_bootstrap.init(
+            '00Dak00000zrxO2',
+            'VoiceChat',
+            'https://trailsignup-01cedcd980ec47.my.site.com/ESWVoiceChat1791921320202',
+            { scrt2URL: 'https://trailsignup-01cedcd980ec47.my.salesforce-scrt.com' }
+          );
+        } catch (err) {
+          console.error('Error loading Embedded Messaging: ', err);
+        }
+      }
+    </script>
+    <script
+      type="text/javascript"
+      src="https://trailsignup-01cedcd980ec47.my.site.com/ESWVoiceChat1791921320202/assets/js/bootstrap.min.js"
+      onload="initEmbeddedMessaging()"
+    ></script>
   </body>
 </html>

@@ -130,7 +130,7 @@ app.post('/api/session/:id/message', async (req, res) => {
             gotFinal = true;
             send({ type: 'message', text: m.message || '' });
             break;
-          case 'Escalation':
+          case 'Escalate':
             // La Agent API no puede transferir a una persona (no hay Omni-Channel en este canal).
             gotFinal = true;
             send({ type: 'message', text: 'En este chat no puedo transferirte con una persona. Usa el chat de atención en vivo de la página o contáctanos por los canales oficiales. ¿Te ayudo con algo más?' });

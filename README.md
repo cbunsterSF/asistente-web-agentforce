@@ -21,7 +21,7 @@ Salesforce Messaging (canal VoiceChat)  →  agente "Asistente_Web"
    └─ escalamiento: flujo Asistente_Web_Escalamiento → cola Messaging
 ```
 
-El servidor Node/Express solo sirve los archivos compilados; no guarda credenciales.
+El sitio es estático y se publica en **GitHub Pages**: https://cbunstersf.github.io/asistente-web-agentforce/ (no guarda credenciales).
 
 ## Componentes en Salesforce
 
@@ -32,7 +32,7 @@ El servidor Node/Express solo sirve los archivos compilados; no guarda credencia
 | Canal / despliegue | `VoiceChat` (Enhanced Chat v2, Agentforce Voice activado) |
 | Flujo de escalamiento | `Asistente_Web_Escalamiento` → cola `SDO_Service_Messaging` |
 
-El snippet del widget está en `web/index.html`. El dominio permitido en el canal es el del Codespace (`asistente-web-gx4q97x596qghw6gx-3001.app.github.dev`); si publicas en otro dominio, agrégalo en el canal y vuelve a publicar el despliegue.
+El snippet del widget está en `web/index.html`. El dominio `https://cbunstersf.github.io` está permitido en el canal (`salesforce/force-app/main/default/corsWhitelistOrigins/`); si publicas en otro dominio, agrégalo en el canal y vuelve a publicar el despliegue.
 
 ## Puesta en marcha (local)
 
@@ -50,20 +50,13 @@ npm run build
 npm start                 # http://localhost:3001
 ```
 
-## Publicar en internet con GitHub Codespaces
+## Publicar en GitHub Pages
 
-1. Crea el Codespace (instala dependencias y compila automáticamente):
-   ```bash
-   gh codespace create -R cbunsterSF/asistente-web-agentforce -b main -m basicLinux32gb --idle-timeout 240m
-   ```
-2. Arranca la app (Codespaces termina los procesos que deja el `postStartCommand`, así que se lanza por SSH; usa una clave sin passphrase, p. ej. `ssh-keygen -t ed25519 -N "" -f ~/.ssh/codespaces.auto`):
-   ```bash
-   gh codespace ssh -c <nombre> -- -i ~/.ssh/codespaces.auto 'bash /workspaces/asistente-web-agentforce/.devcontainer/start.sh'
-   ```
-3. Haz público el puerto: `gh codespace ports visibility 3001:public -c <nombre>`
-4. Abre `https://<nombre>-3001.app.github.dev`.
+```bash
+npm run publish:pages
+```
 
-> El Codespace se detiene tras 4 h de inactividad. Para volver a usarlo, repite los pasos 2 y 3. Si creas un Codespace nuevo, cambia el dominio en el canal VoiceChat.
+Compila la landing y la sube a la rama `gh-pages` (`scripts/publish-pages.sh`). GitHub Pages la sirve en https://cbunstersf.github.io/asistente-web-agentforce/ en uno o dos minutos. Como es un sitio estático, no se detiene por inactividad.
 
 ## Modificar el agente
 
@@ -82,4 +75,4 @@ sf agent activate --api-name Asistente_Web --version <N>
 | No aparece el botón del chat | El dominio de la página no está en el canal VoiceChat, o el despliegue no está publicado |
 | No aparece el botón de voz | Falta "Allow Agentforce Voice for Enhanced Chat" en el canal; el botón aparece después del primer mensaje |
 | La voz responde en inglés | Idioma por defecto del agente o voz de Voice Settings en inglés |
-| La URL pública responde `401` | La app no está corriendo en el Codespace (repite los pasos 2 y 3) |
+| La página muestra una versión antigua | GitHub Pages tarda 1–2 min en publicar; recarga sin caché |

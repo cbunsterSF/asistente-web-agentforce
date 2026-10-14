@@ -32,7 +32,7 @@ El sitio es estático y se publica en **GitHub Pages**: https://cbunstersf.githu
 | Canal / despliegue | `VoiceChat` (Enhanced Chat v2, Agentforce Voice activado) |
 | Flujo de escalamiento | `Asistente_Web_Escalamiento` → cola `SDO_Service_Messaging` |
 
-El snippet del widget está en `web/index.html`. El dominio `https://cbunstersf.github.io` está permitido en el canal (`salesforce/force-app/main/default/corsWhitelistOrigins/`); si publicas en otro dominio, agrégalo en el canal y vuelve a publicar el despliegue.
+El snippet del widget está en `web/index.html`. El dominio `cbunstersf.github.io` está permitido en dos lugares: CORS (`salesforce/force-app/main/default/corsWhitelistOrigins/`) y los dominios que pueden mostrar el sitio del chat en un iframe (`siteIframeWhiteListUrls` en `salesforce/force-app/main/default/sites/ESW_VoiceChat_1791921320202.site-meta.xml`). Si publicas en otro dominio, agrégalo en ambos y despliega.
 
 ## Puesta en marcha (local)
 
@@ -72,7 +72,7 @@ sf agent activate --api-name Asistente_Web --version <N>
 
 | Síntoma | Causa probable |
 |---|---|
-| No aparece el botón del chat | El dominio de la página no está en el canal VoiceChat, o el despliegue no está publicado |
+| No aparece el botón del chat | El dominio no está permitido (consola: `violates ... frame-ancestors` → falta en `siteIframeWhiteListUrls`), o el despliegue no está publicado |
 | No aparece el botón de voz | Falta "Allow Agentforce Voice for Enhanced Chat" en el canal; el botón aparece después del primer mensaje |
 | La voz responde en inglés | Idioma por defecto del agente o voz de Voice Settings en inglés |
 | La página muestra una versión antigua | GitHub Pages tarda 1–2 min en publicar; recarga sin caché |

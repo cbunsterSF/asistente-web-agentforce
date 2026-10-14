@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Starbucks Chile · Demo de atención con Agentforce</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='%23006241'/></svg>" />
+    <script type="module" crossorigin src="./assets/index-Y4YOVb_Y.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DK-LpyQK.css">
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Enhanced Chat v2 (despliegue VoiceChat) con Agentforce Voice -->
+    <script type="text/javascript">
+      function initEmbeddedMessaging() {
+        try {
+          embeddedservice_bootstrap.settings.language = 'es_MX';
+          embeddedservice_bootstrap.init(
+            '00Dak00000zrxO2',
+            'VoiceChat',
+            'https://trailsignup-01cedcd980ec47.my.site.com/ESWVoiceChat1791921320202',
+            { scrt2URL: 'https://trailsignup-01cedcd980ec47.my.salesforce-scrt.com' }
+          );
+        } catch (err) {
+          console.error('Error loading Embedded Messaging: ', err);
+        }
+      }
+    </script>
+    <!-- async: si el sitio de Salesforce tarda, la landing se muestra igual -->
+    <script
+      async
+      type="text/javascript"
+      src="https://trailsignup-01cedcd980ec47.my.site.com/ESWVoiceChat1791921320202/assets/js/bootstrap.min.js"
+      onload="initEmbeddedMessaging()"
+    ></script>
+  </body>
+</html>
